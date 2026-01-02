@@ -73,7 +73,15 @@ export const Study = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Ana Sayfaya Dön
           </Link>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Tıbbi Terimler</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl sm:text-4xl font-bold">Tıbbi Terimler</h1>
+            <Link to="/study/roots">
+              <Button variant="outline" className="gap-2">
+                <BookOpen className="w-4 h-4" />
+                Kökler
+              </Button>
+            </Link>
+          </div>
           <p className="text-lg text-muted-foreground">Sistemlere göre terimleri incele, öğren ve öğrendiklerini işaretle</p>
         </div>
 
@@ -146,9 +154,8 @@ export const Study = () => {
                         return (
                           <Card
                             key={term.id}
-                            className={`transition-all hover:shadow-lg ${
-                              progress.learned ? 'border-success bg-success/5' : ''
-                            }`}
+                            className={`transition-all hover:shadow-lg ${progress.learned ? 'border-success bg-success/5' : ''
+                              }`}
                           >
                             <CardContent className="p-4">
                               <div className="flex items-start justify-between mb-3">
@@ -166,11 +173,10 @@ export const Study = () => {
                                 variant={progress.learned ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => handleMarkAsLearned(term.id)}
-                                className={`w-full ${
-                                  progress.learned
-                                    ? 'bg-success hover:bg-success/90 !text-white'
-                                    : '!text-foreground'
-                                }`}
+                                className={`w-full ${progress.learned
+                                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                                  : 'hover:bg-secondary'
+                                  }`}
                               >
                                 {progress.learned ? '✓ Öğrenildi' : 'Öğrendim'}
                               </Button>

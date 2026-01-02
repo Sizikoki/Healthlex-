@@ -5,6 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { Home } from '@/pages/Home';
 import { Login, Register } from '@/pages/Auth';
 import { Study } from '@/pages/Study';
+import { Roots } from '@/pages/Roots';
 import { Games } from '@/pages/Games';
 import { Flashcards } from '@/pages/Flashcards';
 import { MatchGame } from '@/pages/MatchGame';
@@ -28,6 +29,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/study" element={<Study />} />
+          <Route path="/study/roots" element={<Roots />} />
           <Route path="/games" element={<Games />} />
           <Route path="/flashcards" element={
             <ProtectedRoute>
