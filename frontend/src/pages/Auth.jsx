@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { Activity, Mail, Lock, User as UserIcon, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,20 +14,26 @@ export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  usePageMeta({
+    title: 'Giriş Yap | HealthLexMed',
+    robots: 'noindex,nofollow',
+    canonicalPath: '/login',
+  });
+
   const handleLogin = (e) => {
     e.preventDefault();
     if (!email || !password) {
       toast.error('Lütfen tüm alanları doldurun');
       return;
     }
-    
+
     // Mock login
     saveUser({
       name: email.split('@')[0],
       email: email,
-      joinDate: new Date().toISOString()
+      joinDate: new Date().toISOString(),
     });
-    
+
     toast.success('Giriş başarılı! Hoş geldiniz.');
     navigate('/');
   };
@@ -40,7 +47,7 @@ export const Login = () => {
               <Activity className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">HealthLex'e Giriş Yap</CardTitle>
+          <CardTitle className="text-2xl font-bold">HealthLex&apos;e Giriş Yap</CardTitle>
           <CardDescription>Hesabınıza erişin ve öğrenmeye devam edin</CardDescription>
         </CardHeader>
         <CardContent>
@@ -59,7 +66,7 @@ export const Login = () => {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Şifre</Label>
               <div className="relative">
@@ -79,13 +86,13 @@ export const Login = () => {
               Giriş Yap
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Hesabın yok mu?{' '}
-              <a href="/register" className="text-primary font-medium hover:underline">
+              <Link to="/register" className="text-primary font-medium hover:underline">
                 Kayıt Ol
-              </a>
+              </Link>
             </p>
           </div>
         </CardContent>
@@ -100,20 +107,26 @@ export const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  usePageMeta({
+    title: 'Kayıt Ol | HealthLexMed',
+    robots: 'noindex,nofollow',
+    canonicalPath: '/register',
+  });
+
   const handleRegister = (e) => {
     e.preventDefault();
     if (!name || !email || !password) {
       toast.error('Lütfen tüm alanları doldurun');
       return;
     }
-    
+
     // Mock registration
     saveUser({
       name: name,
       email: email,
-      joinDate: new Date().toISOString()
+      joinDate: new Date().toISOString(),
     });
-    
+
     toast.success('Hesap oluşturuldu! Hoş geldiniz.');
     navigate('/');
   };
@@ -127,7 +140,7 @@ export const Register = () => {
               <Sparkles className="w-8 h-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">HealthLex'e Kayıt Ol</CardTitle>
+          <CardTitle className="text-2xl font-bold">HealthLex&apos;e Kayıt Ol</CardTitle>
           <CardDescription>Ücretsiz hesap oluştur ve öğrenmeye başla</CardDescription>
         </CardHeader>
         <CardContent>
@@ -161,7 +174,7 @@ export const Register = () => {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Şifre</Label>
               <div className="relative">
@@ -181,13 +194,13 @@ export const Register = () => {
               Hesap Oluştur
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Zaten hesabın var mı?{' '}
-              <a href="/login" className="text-primary font-medium hover:underline">
+              <Link to="/login" className="text-primary font-medium hover:underline">
                 Giriş Yap
-              </a>
+              </Link>
             </p>
           </div>
         </CardContent>
