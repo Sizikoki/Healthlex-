@@ -6,6 +6,7 @@ import { Home } from '@/pages/Home';
 import { Login, Register } from '@/pages/Auth';
 import { Study } from '@/pages/Study';
 import { Roots } from '@/pages/Roots';
+import { Prefixes } from '@/pages/Prefixes';
 import { Games } from '@/pages/Games';
 import { Flashcards } from '@/pages/Flashcards';
 import { MatchGame } from '@/pages/MatchGame';
@@ -30,6 +31,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/study" element={<Study />} />
           <Route path="/study/roots" element={<Roots />} />
+          <Route path="/study/prefixes" element={<Prefixes />} />
           <Route path="/games" element={<Games />} />
           <Route path="/flashcards" element={
             <ProtectedRoute>

@@ -75,12 +75,20 @@ export const Study = () => {
           </Link>
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl sm:text-4xl font-bold">Tıbbi Terimler</h1>
-            <Link to="/study/roots">
-              <Button variant="outline" className="gap-2">
-                <BookOpen className="w-4 h-4" />
-                Kökler
-              </Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link to="/study/roots">
+                <Button variant="outline" className="gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Kökler
+                </Button>
+              </Link>
+              <Link to="/study/prefixes">
+                <Button variant="outline" className="gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Ön Ekler
+                </Button>
+              </Link>
+            </div>
           </div>
           <p className="text-lg text-muted-foreground">Sistemlere göre terimleri incele, öğren ve öğrendiklerini işaretle</p>
         </div>
