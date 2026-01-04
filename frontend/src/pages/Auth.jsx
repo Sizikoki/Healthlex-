@@ -1,45 +1,79 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { usePageMeta } from '@/hooks/usePageMeta';
-import { Activity, Mail, Lock, User as UserIcon, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { saveUser } from '@/utils/storage';
-import { toast } from 'sonner';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
+import { Activity, Mail, Lock, User as UserIcon, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import {
+  resendVerification,
+} from "@/services/authService";
+
+/* =========================
+   LOGIN
+========================= */
 
 export const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { login } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [needVerify, setNeedVerify] = useState(false);
 
   usePageMeta({
-    title: 'Giriş Yap | HealthLexMed',
-    robots: 'noindex,nofollow',
-    canonicalPath: '/login',
+    title: "Giriş Yap | HealthLexMed",
+    robots: "noindex,nofollow",
+    canonicalPath: "/login",
   });
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setNeedVerify(false);
+
     if (!email || !password) {
-      toast.error('Lütfen tüm alanları doldurun');
+      toast.error("Lütfen tüm alanları doldurun");
       return;
     }
 
-    // Mock login
-    saveUser({
-      name: email.split('@')[0],
-      email: email,
-      joinDate: new Date().toISOString(),
-    });
+    setLoading(true);
+    try {
+      await login({ email: email.trim(), password });
+      toast.success("Giriş başarılı!");
+      navigate("/profile");
+    } catch (err) {
+      if (err?.code === "EMAIL_NOT_VERIFIED") {
+        setNeedVerify(true);
+        toast.error("Email doğrulanmamış");
+      } else {
+        toast.error("E-posta veya şifre hatalı");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    toast.success('Giriş başarılı! Hoş geldiniz.');
-    navigate('/');
+  const handleResend = async () => {
+    try {
+      await resendVerification(email.trim());
+      toast.success("Doğrulama maili tekrar gönderildi");
+    } catch {
+      toast.error("Mail gönderilemedi");
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 gradient-hero">
+    <div className="min-h-screen flex items-center justify-center gradient-hero px-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
@@ -47,162 +81,180 @@ export const Login = () => {
               <Activity className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">HealthLex&apos;e Giriş Yap</CardTitle>
-          <CardDescription>Hesabınıza erişin ve öğrenmeye devam edin</CardDescription>
+          <CardTitle className="text-2xl font-bold">Giriş Yap</CardTitle>
+          <CardDescription>Hesabına eriş</CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-posta</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="ornek@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div>
+              <Label>E-posta</Label>
+              <Input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Şifre</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div>
+              <Label>Şifre</Label>
+              <Input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
 
-            <Button type="submit" className="w-full gradient-primary shadow-lg">
-              Giriş Yap
+            <Button
+              type="submit"
+              className="w-full gradient-primary"
+              disabled={loading}
+            >
+              {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Hesabın yok mu?{' '}
-              <Link to="/register" className="text-primary font-medium hover:underline">
-                Kayıt Ol
-              </Link>
-            </p>
-          </div>
+          {needVerify && (
+            <div className="mt-4 text-center space-y-2">
+              <p className="text-sm text-destructive">
+                Email doğrulanmamış.
+              </p>
+              <Button variant="outline" onClick={handleResend}>
+                Doğrulama Mailini Tekrar Gönder
+              </Button>
+            </div>
+          )}
+
+          <p className="mt-6 text-center text-sm">
+            Hesabın yok mu?{" "}
+            <Link to="/register" className="text-primary underline">
+              Kayıt Ol
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>
   );
 };
 
+/* =========================
+   REGISTER
+========================= */
+
 export const Register = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { register } = useAuth();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   usePageMeta({
-    title: 'Kayıt Ol | HealthLexMed',
-    robots: 'noindex,nofollow',
-    canonicalPath: '/register',
+    title: "Kayıt Ol | HealthLexMed",
+    robots: "noindex,nofollow",
+    canonicalPath: "/register",
   });
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
+
     if (!name || !email || !password) {
-      toast.error('Lütfen tüm alanları doldurun');
+      toast.error("Tüm alanları doldurun");
       return;
     }
 
-    // Mock registration
-    saveUser({
-      name: name,
-      email: email,
-      joinDate: new Date().toISOString(),
-    });
+    setLoading(true);
+    try {
+      await register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
 
-    toast.success('Hesap oluşturuldu! Hoş geldiniz.');
-    navigate('/');
+      setRegistered(true);
+      toast.success("Doğrulama maili gönderildi");
+    } catch {
+      toast.error("Kayıt başarısız");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  if (registered) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-hero px-4">
+        <Card className="max-w-md text-center">
+          <CardHeader>
+            <Sparkles className="mx-auto w-10 h-10 text-primary" />
+            <CardTitle>Email Doğrulama</CardTitle>
+            <CardDescription>
+              Mail adresine doğrulama linki gönderdik.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate("/login")}>
+              Giriş Sayfasına Git
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 gradient-hero">
+    <div className="min-h-screen flex items-center justify-center gradient-hero px-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-gradient-to-br from-primary via-secondary to-accent rounded-xl shadow-lg">
-              <Sparkles className="w-8 h-8 text-white" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl font-bold">HealthLex&apos;e Kayıt Ol</CardTitle>
-          <CardDescription>Ücretsiz hesap oluştur ve öğrenmeye başla</CardDescription>
+          <UserIcon className="mx-auto w-8 h-8 text-primary" />
+          <CardTitle>Kayıt Ol</CardTitle>
+          <CardDescription>Ücretsiz hesap oluştur</CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Ad Soyad</Label>
-              <div className="relative">
-                <UserIcon className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Adınız Soyadınız"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
+            <Input
+              placeholder="Ad Soyad"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+            <Input
+              type="email"
+              placeholder="E-posta"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <Input
+              type="password"
+              placeholder="Şifre"
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="email">E-posta</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="ornek@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Şifre</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="En az 6 karakter"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full gradient-primary shadow-lg">
-              Hesap Oluştur
+            <Button
+              type="submit"
+              className="w-full gradient-primary"
+              disabled={loading}
+            >
+              {loading ? "Oluşturuluyor..." : "Hesap Oluştur"}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Zaten hesabın var mı?{' '}
-              <Link to="/login" className="text-primary font-medium hover:underline">
-                Giriş Yap
-              </Link>
-            </p>
-          </div>
+          <p className="mt-6 text-center text-sm">
+            Zaten hesabın var mı?{" "}
+            <Link to="/login" className="text-primary underline">
+              Giriş Yap
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>
