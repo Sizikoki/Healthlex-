@@ -58,6 +58,12 @@ export const getProgress = () => {
   return data ? JSON.parse(data) : {};
 };
 
+// 🔴 BUILD HATASINI ÇÖZEN EKSİK EXPORT
+export const getTermProgress = (termId) => {
+  const progress = getProgress();
+  return progress[termId] || { learned: false, reviewCount: 0 };
+};
+
 // --------------------
 // Flashcard progress
 // --------------------
@@ -70,7 +76,10 @@ export const saveFlashcardSession = (categoryId, completedCount, totalCount) => 
     totalCount,
     date: new Date().toISOString(),
   });
-  localStorage.setItem(STORAGE_KEYS.FLASHCARD_PROGRESS, JSON.stringify(sessions));
+  localStorage.setItem(
+    STORAGE_KEYS.FLASHCARD_PROGRESS,
+    JSON.stringify(sessions)
+  );
 };
 
 export const getFlashcardSessions = () => {
