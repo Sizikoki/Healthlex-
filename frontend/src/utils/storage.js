@@ -1,9 +1,10 @@
 // ================================
-// AUTH STORAGE (JWT + REFRESH)
+// AUTH STORAGE (JWT + REFRESH) + BACKWARD COMPAT
 // ================================
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
+const AUTH_USER_KEY = "auth_user"; // user objesi (opsiyonel ama eski kodlarla uyum için)
 
 export function getAccessToken() {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -14,18 +15,49 @@ export function getRefreshToken() {
 }
 
 export function setTokens({ access_token, refresh_token }) {
-  if (access_token) {
-    localStorage.setItem(ACCESS_TOKEN_KEY, access_token);
-  }
-  if (refresh_token) {
-    localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
-  }
+  if (access_token) localStorage.setItem(ACCESS_TOKEN_KEY, access_token);
+  if (refresh_token) localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
 }
 
 export function clearTokens() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
+
+// ---- user cache (opsiyonel) ----
+export function saveAuthUser(userData) {
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+}
+
+export function getAuthUser() {
+  const data = localStorage.getItem(AUTH_USER_KEY);
+  return data ? JSON.parse(data) : null;
+}
+
+export function clearAuthUser() {
+  localStorage.removeItem(AUTH_USER_KEY);
+}
+
+// ---- logout ----
+export function authLogout() {
+  clearTokens();
+  clearAuthUser();
+}
+
+// ================================
+// BACKWARD COMPAT ALIASES (eski import'lar kırılmasın)
+// ================================
+
+// Eski kodlar getAuthToken/setAuthToken bekliyor
+export const getAuthToken = () => getAccessToken();
+export const setAuthToken = (token) => setTokens({ access_token: token });
+export const clearAuthToken = () => localStorage.removeItem(ACCESS_TOKEN_KEY);
+
+// Eski kodlar getUser/saveUser/isLoggedIn/logout bekliyor
+export const getUser = () => getAuthUser();
+export const saveUser = (userData) => saveAuthUser(userData);
+export const isLoggedIn = () => !!getAccessToken();
+export const logout = () => authLogout();
 
 // ================================
 // PROGRESS (LOCAL – OFFLINE OK)
@@ -58,10 +90,15 @@ export const getProgress = () => {
   return data ? JSON.parse(data) : {};
 };
 
-// 🔴 BUILD HATASINI ÇÖZEN EKSİK EXPORT
+// Build fix + eski import uyumu
 export const getTermProgress = (termId) => {
   const progress = getProgress();
   return progress[termId] || { learned: false, reviewCount: 0 };
+};
+
+export const getLearnedCount = () => {
+  const progress = getProgress();
+  return Object.values(progress).filter((p) => p.learned).length;
 };
 
 // --------------------
@@ -76,10 +113,7 @@ export const saveFlashcardSession = (categoryId, completedCount, totalCount) => 
     totalCount,
     date: new Date().toISOString(),
   });
-  localStorage.setItem(
-    STORAGE_KEYS.FLASHCARD_PROGRESS,
-    JSON.stringify(sessions)
-  );
+  localStorage.setItem(STORAGE_KEYS.FLASHCARD_PROGRESS, JSON.stringify(sessions));
 };
 
 export const getFlashcardSessions = () => {
@@ -106,6 +140,13 @@ export const saveQuizScore = (categoryId, score, total) => {
 export const getQuizScores = () => {
   const data = localStorage.getItem(STORAGE_KEYS.QUIZ_SCORES);
   return data ? JSON.parse(data) : [];
+};
+
+export const getAverageQuizScore = () => {
+  const scores = getQuizScores();
+  if (scores.length === 0) return 0;
+  const sum = scores.reduce((acc, s) => acc + (s.percentage || 0), 0);
+  return Math.round(sum / scores.length);
 };
 
 // --------------------
@@ -145,10 +186,7 @@ export const updateStreak = () => {
 
   if (lastStudy === yesterday) {
     streak.currentStreak += 1;
-    streak.longestStreak = Math.max(
-      streak.longestStreak,
-      streak.currentStreak
-    );
+    streak.longestStreak = Math.max(streak.longestStreak, streak.currentStreak);
   } else {
     streak.currentStreak = 1;
   }
@@ -170,4 +208,28 @@ export const getStreak = () => {
       totalDays: 0,
       lastStudyDate: null,
     };
+};
+
+// --------------------
+// Stats summary (eski Home kullanımı için de uyumlu)
+// --------------------
+
+export const getStats = () => {
+  const progress = getProgress();
+  const learnedCount = Object.values(progress).filter((p) => p.learned).length;
+  const totalReviews = Object.values(progress).reduce((acc, p) => acc + (p.reviewCount || 0), 0);
+  const streak = getStreak();
+  const quizAvg = getAverageQuizScore();
+  const quizCount = getQuizScores().length;
+  const matchCount = getMatchScores().length;
+
+  return {
+    learnedTerms: learnedCount,
+    totalReviews,
+    currentStreak: streak.currentStreak,
+    longestStreak: streak.longestStreak,
+    averageQuizScore: quizAvg,
+    quizzesTaken: quizCount,
+    matchGamesPlayed: matchCount,
+  };
 };
