@@ -31,6 +31,19 @@ REFRESH_TOKEN_DAYS = 7
 EMAIL_VERIFY_MINUTES = 30
 
 app = FastAPI()
+
+# =====================
+# TEST BAĞLANTISI (EKLEDİĞİM KISIM)
+# =====================
+@app.on_event("startup")
+async def startup_db_client():
+    try:
+        # Veritabanına bir 'ping' atıyoruz, cevap gelirse bağlantı tamamdır.
+        await client.admin.command('ping')
+        print("✅ BAŞARILI: MongoDB veritabanına bağlantı kuruldu!")
+    except Exception as e:
+        print(f"❌ HATA: Veritabanına bağlanılamadı! Hata detayı: {e}")
+
 api_router = APIRouter(prefix="/api")
 
 # =====================
@@ -184,10 +197,7 @@ async def register(data: RegisterRequest):
     }
 
     await db.users.insert_one(user)
-
-    # 🔔 BURADA EMAIL GÖNDERİLECEK (şimdilik log)
     logging.info(f"[VERIFY EMAIL] token={verify_token}")
-
     return {"ok": True}
 
 
@@ -206,7 +216,6 @@ async def verify_email(data: VerifyEmailRequest):
         {"$set": {"email_verified": True},
          "$unset": {"email_verify_token": "", "email_verify_exp": ""}}
     )
-
     return {"ok": True}
 
 
@@ -217,7 +226,6 @@ async def resend_verification(data: ResendVerifyRequest):
         return {"ok": True}
 
     verify_token = create_email_verify_token()
-
     await db.users.update_one(
         {"_id": user["_id"]},
         {"$set": {
@@ -225,7 +233,6 @@ async def resend_verification(data: ResendVerifyRequest):
             "email_verify_exp": datetime.utcnow() + timedelta(minutes=EMAIL_VERIFY_MINUTES)
         }}
     )
-
     logging.info(f"[VERIFY EMAIL RESEND] token={verify_token}")
     return {"ok": True}
 
@@ -247,7 +254,6 @@ async def login(data: LoginRequest):
         "user_id": user["_id"],
         "expires_at": datetime.utcnow() + timedelta(days=REFRESH_TOKEN_DAYS)
     })
-
     return {"access_token": access, "refresh_token": refresh}
 
 
@@ -266,7 +272,6 @@ async def refresh(data: RefreshRequest):
         "user_id": user_id,
         "expires_at": datetime.utcnow() + timedelta(days=REFRESH_TOKEN_DAYS)
     })
-
     return {
         "access_token": create_access_token(user_id),
         "refresh_token": new_refresh
