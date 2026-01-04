@@ -16,7 +16,15 @@ export async function me() {
 }
 
 export async function logout(refresh_token) {
-    // refresh_token (yenileme anahtarı) opsiyonel; backend bekliyorsa gönder
     const res = await api.post("/api/auth/logout", { refresh_token });
     return res.data;
+}
+
+// ✅ Build fix: resendVerification (doğrulama mailini yeniden gönder) — şimdilik backend’de yoksa stub
+export async function resendVerification() {
+    // Eğer ileride backend'e endpoint eklersen burada gerçek çağrıyı yaparsın:
+    // return (await api.post("/api/auth/resend-verification")).data;
+
+    // Şimdilik build kırılmasın diye kontrollü hata:
+    throw new Error("resendVerification backend endpoint'i henüz yok");
 }
