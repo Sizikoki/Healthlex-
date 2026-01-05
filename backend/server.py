@@ -29,7 +29,7 @@ JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret")
 JWT_ALGORITHM = "HS256"
 
 # GOOGLE CLIENT ID
-GOOGLE_CLIENT_ID = "279499913538-gtltbe7fmrn95ud955uen6ah5j82g1avs.apps.googleusercontent.com"
+GOOGLE_CLIENT_ID = "279499913538-gtltbe7fmn95ud955uen6ah5j82g1avs.apps.googleusercontent.com"
 
 ACCESS_TOKEN_MINUTES = 15
 REFRESH_TOKEN_DAYS = 7
