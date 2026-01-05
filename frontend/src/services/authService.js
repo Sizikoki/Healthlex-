@@ -10,6 +10,13 @@ export async function login(payload) {
     return res.data;
 }
 
+// ✅ YENİ: Google Login Fonksiyonu
+// Artık Login.jsx içinde axios.post yerine bunu çağırabilirsin.
+export async function loginWithGoogle(credential) {
+    const res = await api.post("/api/auth/google", { credential });
+    return res.data;
+}
+
 export async function me() {
     const res = await api.get("/api/auth/me");
     return res.data;
@@ -20,11 +27,16 @@ export async function logout(refresh_token) {
     return res.data;
 }
 
-// ✅ Build fix: resendVerification (doğrulama mailini yeniden gönder) — şimdilik backend’de yoksa stub
-export async function resendVerification() {
-    // Eğer ileride backend'e endpoint eklersen burada gerçek çağrıyı yaparsın:
-    // return (await api.post("/api/auth/resend-verification")).data;
+// ✅ BUILD FIX: verifyEmail (Hata veren eksik fonksiyon buydu)
+export async function verifyEmail(token) {
+    // Backend'de bu endpoint henüz yoksa bile fonksiyon burada tanımlı olmalı ki build geçsin
+    const res = await api.post("/api/auth/verify-email", { token });
+    return res.data;
+}
 
-    // Şimdilik build kırılmasın diye kontrollü hata:
-    throw new Error("resendVerification backend endpoint'i henüz yok");
+// ✅ Build fix: resendVerification
+export async function resendVerification(email) {
+    // Backend'e e-posta parametresiyle gönderiyoruz
+    const res = await api.post("/api/auth/resend-verification", { email });
+    return res.data;
 }

@@ -14,12 +14,12 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import {
-  resendVerification,
-} from "@/services/authService";
+// Google Login ve Merkezi Servis Importları
+import { GoogleLogin } from '@react-oauth/google';
+import { resendVerification, loginWithGoogle } from "@/services/authService";
 
 /* =========================
-   LOGIN
+    LOGIN
 ========================= */
 
 export const Login = () => {
@@ -37,6 +37,7 @@ export const Login = () => {
     canonicalPath: "/login",
   });
 
+  // Standart E-posta/Şifre Girişi
   const handleLogin = async (e) => {
     e.preventDefault();
     setNeedVerify(false);
@@ -58,6 +59,27 @@ export const Login = () => {
       } else {
         toast.error("E-posta veya şifre hatalı");
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ GOOGLE GİRİŞ BAŞARI FONKSİYONU
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    try {
+      // authService içindeki merkezi fonksiyonu kullanıyoruz
+      const data = await loginWithGoogle(credentialResponse.credential);
+
+      // Token'ları tarayıcıya kaydediyoruz (api/client bunu kullanacak)
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+
+      toast.success("Google ile giriş başarılı!");
+      navigate("/profile");
+    } catch (err) {
+      console.error("Google Login Error:", err);
+      toast.error("Google girişi başarısız oldu.");
     } finally {
       setLoading(false);
     }
@@ -118,6 +140,27 @@ export const Login = () => {
             </Button>
           </form>
 
+          {/* ✅ GOOGLE AYIRICI VE BUTON */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground font-medium">Veya</span>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toast.error("Google girişi başarısız")}
+              theme="outline"
+              size="large"
+              width="100%"
+              shape="pill"
+            />
+          </div>
+
           {needVerify && (
             <div className="mt-4 text-center space-y-2">
               <p className="text-sm text-destructive">
@@ -131,7 +174,7 @@ export const Login = () => {
 
           <p className="mt-6 text-center text-sm">
             Hesabın yok mu?{" "}
-            <Link to="/register" className="text-primary underline">
+            <Link to="/register" className="text-primary underline font-medium">
               Kayıt Ol
             </Link>
           </p>
@@ -142,10 +185,11 @@ export const Login = () => {
 };
 
 /* =========================
-   REGISTER
+    REGISTER
 ========================= */
 
 export const Register = () => {
+  // ... (Girdiğin Register kodunun aynısı burada devam ediyor)
   const navigate = useNavigate();
   const { register } = useAuth();
 
@@ -251,7 +295,7 @@ export const Register = () => {
 
           <p className="mt-6 text-center text-sm">
             Zaten hesabın var mı?{" "}
-            <Link to="/login" className="text-primary underline">
+            <Link to="/login" className="text-primary underline font-medium">
               Giriş Yap
             </Link>
           </p>
