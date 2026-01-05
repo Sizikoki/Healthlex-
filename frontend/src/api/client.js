@@ -1,11 +1,11 @@
 import axios from "axios";
 import { getAccessToken } from "@/utils/storage";
 
-// ✅ Backend adresini senin gerçek Render adresinle güncelledik
+// ✅ ÖNEMLİ: Sonuna /api ekledik çünkü backend tüm rotaları bu ekle bekliyor.
 const API_BASE_URL =
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
     process.env.REACT_APP_API_BASE_URL ||
-    "https://healthlex-back.onrender.com"; // BURASI DÜZELTİLDİ
+    "https://healthlex-back.onrender.com/api"; // BURAYA /api EKLENDİ
 
 export const api = axios.create({
     baseURL: API_BASE_URL,
@@ -25,12 +25,13 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// ✅ Hata ayıklama için ekledik: İsteğin nereye gittiğini konsolda gör
+// ✅ Hata ayıklama için: Hangi tam URL'ye istek atıldığını net görelim
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        const fullUrl = error.config ? `${error.config.baseURL}${error.config.url}` : "Bilinmiyor";
         if (error.response?.status === 404) {
-            console.error("KRİTİK HATA: Backend adresi bulunamadı! Gidilen adres:", error.config.url);
+            console.error("❌ 404 HATASI: Gidilmeye çalışılan tam adres yanlış:", fullUrl);
         }
         return Promise.reject(error);
     }
