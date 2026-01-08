@@ -199,6 +199,56 @@ def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 # =====================
+# DEVICE & LOCATION HELPERS
+# =====================
+
+def parse_device_info(user_agent: str) -> dict:
+    """User-Agent string'inden device bilgisi çıkar"""
+    try:
+        ua = parse(user_agent)
+        return {
+            "device": ua.device.family if ua.device.family != "Other" else "Desktop",
+            "browser": f"{ua.browser.family} {ua.browser.version_string}",
+            "os": f"{ua.os.family} {ua.os.version_string}",
+            "is_mobile": ua.is_mobile,
+            "is_tablet": ua.is_tablet,
+            "is_pc": ua.is_pc,
+            "raw": user_agent[:100]
+        }
+    except:
+        return {
+            "device": "Unknown",
+            "browser": "Unknown",
+            "os": "Unknown",
+            "raw": user_agent[:100] if user_agent else ""
+        }
+
+
+def get_location_from_ip(ip_address: str) -> str:
+    """Basit IP location (production'da daha gelişmiş kullanılabilir)"""
+    if not ip_address:
+        return "Unknown"
+    
+    # Local IP'ler
+    if ip_address.startswith("192.168.") or ip_address.startswith("10.") or ip_address == "127.0.0.1":
+        return "Local Network"
+    
+    # Basit mapping
+    return "Turkey"  # Placeholder
+
+
+def mask_ip(ip_address: str) -> str:
+    """IP adresini maskele (gizlilik için)"""
+    if not ip_address:
+        return ""
+    
+    parts = ip_address.split(".")
+    if len(parts) == 4:
+        return f"{parts[0]}.{parts[1]}.***.***"
+    
+    return ip_address
+
+# =====================
 # REFRESH TOKEN HELPERS
 # =====================
 
@@ -716,6 +766,142 @@ async def debug_tokens():
         }
     except Exception as e:
         return {"error": str(e)}
+
+@api_router.get("/auth/debug-token/{user_id}")
+async def debug_get_token(user_id: str):  # <-- İNDENT DÜZELDİ! @api_router ile aynı hizada
+    """DEBUG: User ID için access token oluştur"""
+    user = await db.users.find_one({"_id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    access_token = create_access_token(user_id)
+    
+    return {
+        "user_id": user_id,
+        "email": user.get("email", ""),
+        "access_token": access_token,
+        "expires_in": "60 minutes"
+    }
+
+# =====================
+# ENHANCED SESSION MANAGEMENT
+# =====================
+
+
+@api_router.get("/auth/sessions/detailed")
+async def get_detailed_sessions(user_id: str = Depends(get_current_user_id)):
+    """Detaylı oturum bilgilerini döndür"""
+    sessions = await db.refresh_tokens.find({
+        "user_id": user_id,
+        "expires_at": {"$gt": datetime.utcnow()}
+    }).sort("last_used_at", -1).to_list(length=20)
+    
+    formatted_sessions = []
+    
+    for session in sessions:
+        # Device detection from user_agent
+        user_agent = session.get("user_agent", "")
+        device_info = parse_device_info(user_agent)
+        
+        # Location
+        location = get_location_from_ip(session.get("ip_address", ""))
+        
+        formatted_sessions.append({
+            "id": str(session.get("_id", "")),
+            "device_name": device_info.get("device", "Unknown Device"),
+            "browser": device_info.get("browser", "Unknown Browser"),
+            "os": device_info.get("os", "Unknown OS"),
+            "location": location,
+            "ip_address": mask_ip(session.get("ip_address", "")),
+            "created_at": session.get("created_at"),
+            "last_used_at": session.get("last_used_at") or session.get("created_at"),
+            "expires_at": session.get("expires_at"),
+            "is_active": session.get("is_active", False),
+            "is_current": False  # Frontend localStorage'daki token ile karşılaştıracak
+        })
+    
+    return {"sessions": formatted_sessions}
+
+
+@api_router.post("/auth/logout-all-enhanced")
+async def logout_all_enhanced(
+    exclude_current: bool = True,
+    user_id: str = Depends(get_current_user_id),
+    request: Request = None
+):
+    """
+    Geliştirilmiş logout-all
+    - exclude_current: Mevcut cihazı hariç tut (default: True)
+    """
+    # Mevcut token'ı al
+    current_token = None
+    auth_header = request.headers.get("Authorization") if request else None
+    if auth_header and auth_header.startswith("Bearer "):
+        current_token = auth_header[7:]
+    
+    # Update query
+    update_query = {"user_id": user_id, "is_active": True}
+    if exclude_current and current_token:
+        update_query["token"] = {"$ne": current_token}
+        message = f"Diğer tüm cihazlardan çıkış yapıldı. Mevcut cihazda oturumunuz açık kaldı."
+    else:
+        message = "Tüm cihazlardan çıkış yapıldı."
+    
+    result = await db.refresh_tokens.update_many(
+        update_query,
+        {
+            "$set": {
+                "is_active": False,
+                "logged_out_at": datetime.utcnow(),
+                "logged_out_reason": "logout_all_enhanced"
+            }
+        }
+    )
+    
+    return {
+        "success": True,
+        "message": message,
+        "tokens_invalidated": result.modified_count,
+        "current_device_excluded": exclude_current and current_token is not None
+    }
+
+
+@api_router.get("/auth/notifications/preferences")
+async def get_notification_preferences(user_id: str = Depends(get_current_user_id)):
+    """Kullanıcının notification preference'larını getir"""
+    user = await db.users.find_one({"_id": user_id})
+    
+    # Varsayılan preferences
+    default_prefs = {
+        "learning_reminders": True,
+        "achievement_notifications": True,
+        "security_alerts": True,
+        "email_digest": "weekly"
+    }
+    
+    # Kullanıcının kayıtlı preference'ları
+    user_prefs = user.get("notification_preferences", {}) if user else {}
+    
+    return {**default_prefs, **user_prefs}
+
+
+@api_router.put("/auth/notifications/preferences")
+async def update_notification_preferences(
+    preferences: dict,
+    user_id: str = Depends(get_current_user_id)
+):
+    """Notification preference'larını güncelle"""
+    await db.users.update_one(
+        {"_id": user_id},
+        {"$set": {"notification_preferences": preferences}},
+        upsert=True
+    )
+    
+    return {
+        "success": True, 
+        "message": "Tercihleriniz kaydedildi.",
+        "preferences": preferences
+    }
 
 @api_router.get("/auth/test-refresh")
 async def test_refresh():
