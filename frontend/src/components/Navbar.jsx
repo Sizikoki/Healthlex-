@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+// SIDDIK AKLINI BAŞINA AL ŞU İŞİ ÇABUCAK BİTİR ABİİİİSİNİN GÜLLLLLLÜÜÜÜÜÜ ERken YaT
 
 export const Navbar = () => {
   const { user, isAuthenticated, checking, logout } = useAuth();

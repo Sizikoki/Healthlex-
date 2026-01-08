@@ -15,7 +15,14 @@ import { Quiz } from "@/pages/Quiz";
 import { ProgressPage } from "@/pages/Progress";
 import { Profile } from "@/pages/Profile";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import api from "@/utils/axiosConfig";  // <-- BURADA BİR KEZ İMPORT
 import "./App.css";
+
+// DEBUG: API instance'ını global yap (console'dan test için)
+if (typeof window !== 'undefined') {
+  window.api = api;
+  console.log('🔧 window.api global olarak ayarlandı');
+}
 
 const ProtectedRoute = ({ children }) => {
   const { checking, isAuthenticated } = useAuth();

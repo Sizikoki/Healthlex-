@@ -1,10 +1,10 @@
 // ================================
-// AUTH STORAGE (JWT + REFRESH) + BACKWARD COMPAT
+// AUTH STORAGE (JWT + REFRESH)
 // ================================
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
-const AUTH_USER_KEY = "auth_user"; // user objesi (opsiyonel ama eski kodlarla uyum için)
+const AUTH_USER_KEY = "auth_user";
 
 export function getAccessToken() {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -24,7 +24,7 @@ export function clearTokens() {
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-// ---- user cache (opsiyonel) ----
+// ---- user cache (optional) ----
 export function saveAuthUser(userData) {
   localStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
 }
@@ -45,15 +45,13 @@ export function authLogout() {
 }
 
 // ================================
-// BACKWARD COMPAT ALIASES (eski import'lar kırılmasın)
+// BACKWARD COMPAT ALIASES
 // ================================
 
-// Eski kodlar getAuthToken/setAuthToken bekliyor
 export const getAuthToken = () => getAccessToken();
 export const setAuthToken = (token) => setTokens({ access_token: token });
 export const clearAuthToken = () => localStorage.removeItem(ACCESS_TOKEN_KEY);
 
-// Eski kodlar getUser/saveUser/isLoggedIn/logout bekliyor
 export const getUser = () => getAuthUser();
 export const saveUser = (userData) => saveAuthUser(userData);
 export const isLoggedIn = () => !!getAccessToken();
@@ -71,10 +69,7 @@ const STORAGE_KEYS = {
   STUDY_STREAK: "medterm_streak",
 };
 
-// --------------------
 // Term progress
-// --------------------
-
 export const saveProgress = (termId, isLearned) => {
   const progress = getProgress();
   progress[termId] = {
@@ -90,7 +85,6 @@ export const getProgress = () => {
   return data ? JSON.parse(data) : {};
 };
 
-// Build fix + eski import uyumu
 export const getTermProgress = (termId) => {
   const progress = getProgress();
   return progress[termId] || { learned: false, reviewCount: 0 };
@@ -101,10 +95,7 @@ export const getLearnedCount = () => {
   return Object.values(progress).filter((p) => p.learned).length;
 };
 
-// --------------------
 // Flashcard progress
-// --------------------
-
 export const saveFlashcardSession = (categoryId, completedCount, totalCount) => {
   const sessions = getFlashcardSessions();
   sessions.push({
@@ -113,7 +104,10 @@ export const saveFlashcardSession = (categoryId, completedCount, totalCount) => 
     totalCount,
     date: new Date().toISOString(),
   });
-  localStorage.setItem(STORAGE_KEYS.FLASHCARD_PROGRESS, JSON.stringify(sessions));
+  localStorage.setItem(
+    STORAGE_KEYS.FLASHCARD_PROGRESS,
+    JSON.stringify(sessions)
+  );
 };
 
 export const getFlashcardSessions = () => {
@@ -121,10 +115,7 @@ export const getFlashcardSessions = () => {
   return data ? JSON.parse(data) : [];
 };
 
-// --------------------
 // Quiz scores
-// --------------------
-
 export const saveQuizScore = (categoryId, score, total) => {
   const scores = getQuizScores();
   scores.push({
@@ -149,10 +140,7 @@ export const getAverageQuizScore = () => {
   return Math.round(sum / scores.length);
 };
 
-// --------------------
 // Match game scores
-// --------------------
-
 export const saveMatchScore = (categoryId, time, moves) => {
   const scores = getMatchScores();
   scores.push({
@@ -169,10 +157,7 @@ export const getMatchScores = () => {
   return data ? JSON.parse(data) : [];
 };
 
-// --------------------
 // Study streak
-// --------------------
-
 export const updateStreak = () => {
   const streak = getStreak();
   const today = new Date().toDateString();
@@ -210,14 +195,14 @@ export const getStreak = () => {
     };
 };
 
-// --------------------
-// Stats summary (eski Home kullanımı için de uyumlu)
-// --------------------
-
+// Stats summary
 export const getStats = () => {
   const progress = getProgress();
   const learnedCount = Object.values(progress).filter((p) => p.learned).length;
-  const totalReviews = Object.values(progress).reduce((acc, p) => acc + (p.reviewCount || 0), 0);
+  const totalReviews = Object.values(progress).reduce(
+    (acc, p) => acc + (p.reviewCount || 0),
+    0
+  );
   const streak = getStreak();
   const quizAvg = getAverageQuizScore();
   const quizCount = getQuizScores().length;

@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-// Google Login ve Merkezi Servis Importları
-import { GoogleLogin } from '@react-oauth/google';
-import { resendVerification, loginWithGoogle } from "@/services/authService";
+
+// Google button
+import { GoogleLogin } from "@react-oauth/google";
+import { resendVerification } from "@/services/authService";
 
 /* =========================
     LOGIN
@@ -24,7 +25,7 @@ import { resendVerification, loginWithGoogle } from "@/services/authService";
 
 export const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +38,6 @@ export const Login = () => {
     canonicalPath: "/login",
   });
 
-  // Standart E-posta/Şifre Girişi
   const handleLogin = async (e) => {
     e.preventDefault();
     setNeedVerify(false);
@@ -64,21 +64,15 @@ export const Login = () => {
     }
   };
 
-  // ✅ GOOGLE GİRİŞ BAŞARI FONKSİYONU
+  // ✅ Google login: token/me/state işini AuthContext halleder
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     try {
-      // authService içindeki merkezi fonksiyonu kullanıyoruz
-      const data = await loginWithGoogle(credentialResponse.credential);
-
-      // Token'ları tarayıcıya kaydediyoruz (api/client bunu kullanacak)
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('refresh_token', data.refresh_token);
-
+      await googleLogin(credentialResponse.credential);
       toast.success("Google ile giriş başarılı!");
       navigate("/profile");
     } catch (err) {
-      console.error("Google Login Error:", err);
+      console.error("Google login failed:", err);
       toast.error("Google girişi başarısız oldu.");
     } finally {
       setLoading(false);
@@ -140,13 +134,15 @@ export const Login = () => {
             </Button>
           </form>
 
-          {/* ✅ GOOGLE AYIRICI VE BUTON */}
+          {/* Google ayırıcı */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-muted-foreground font-medium">Veya</span>
+              <span className="bg-white px-2 text-muted-foreground font-medium">
+                Veya
+              </span>
             </div>
           </div>
 
@@ -163,9 +159,7 @@ export const Login = () => {
 
           {needVerify && (
             <div className="mt-4 text-center space-y-2">
-              <p className="text-sm text-destructive">
-                Email doğrulanmamış.
-              </p>
+              <p className="text-sm text-destructive">Email doğrulanmamış.</p>
               <Button variant="outline" onClick={handleResend}>
                 Doğrulama Mailini Tekrar Gönder
               </Button>
@@ -189,7 +183,6 @@ export const Login = () => {
 ========================= */
 
 export const Register = () => {
-  // ... (Girdiğin Register kodunun aynısı burada devam ediyor)
   const navigate = useNavigate();
   const { register } = useAuth();
 
